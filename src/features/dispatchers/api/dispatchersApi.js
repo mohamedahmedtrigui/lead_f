@@ -28,6 +28,12 @@ export const dispatchersApi = {
     return data
   },
 
+  /** Safe deletion (archive). */
+  async remove(id, payload) {
+    const { data } = await http.delete(`/admin/dispatchers/${id}`, { data: payload })
+    return data
+  },
+
   async action(id, action, payload) {
     const { data } = await http.post(`/admin/dispatchers/${id}/${action}`, payload)
     return data

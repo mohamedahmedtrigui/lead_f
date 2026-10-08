@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { ArrowLeft, CheckCircle2, ChevronRight, Lock, PhoneCall, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { InterestBadge } from '@/components/badges'
+import { useConfirm } from '@/components/feedback/ConfirmProvider'
 import { Alert, Button, Card, ErrorState, PageLoader } from '@/components/ui'
 import { LEAD_STATUS, NEXT_ACTION } from '@/constants/domain'
 import { useAuth } from '@/features/auth/context/AuthContext'
@@ -63,7 +64,8 @@ export default function CallWorkspacePage() {
   const timelineQuery = useLeadTimeline(id)
   const invalidate = useInvalidateLeads()
   const [completed, setCompleted] = useState(null)
-  const goToNextLead = useNextLead(Number(id))
+  const nextLead = useNextLead(Number(id))
+  const confirm = useConfirm()
 
   const startCall = useMutation({
     mutationFn: () => leadsApi.startCall(id),
@@ -82,6 +84,18 @@ export default function CallWorkspacePage() {
   const closed = CLOSED_STATUSES.includes(lead.status) || lead.nrp.final
   const canWork = isOwner && !closed
   const callActive = !!lead.open_call
+
+  async function goToNextLead() {
+    if (callActive && canWork && !completed) {
+      const ok = await confirm({
+        title: 'Un appel est en cours',
+        description: 'Le brouillon de qualification est enregistré, mais l’appel restera ouvert. Voulez-vous vraiment passer au lead suivant ?',
+        confirmLabel: 'Passer au lead suivant',
+      })
+      if (!ok) return
+    }
+    nextLead()
+  }
 
   async function handleOutcome(payload) {
     try {

@@ -26,10 +26,14 @@ export function PerformanceTable({ rows = [] }) {
             <tr key={row.id} className="hover:bg-brand-50/40">
               <td className="px-4 py-3 text-left">
                 <span className="font-medium text-slate-900">{row.name}</span>
-                {row.status !== 'APPROVED' && (
-                  <span className="ml-2">
-                    <UserStatusBadge status={row.status} />
-                  </span>
+                {row.deleted ? (
+                  <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">Archivé</span>
+                ) : (
+                  row.status !== 'APPROVED' && (
+                    <span className="ml-2">
+                      <UserStatusBadge status={row.status} />
+                    </span>
+                  )
                 )}
               </td>
               <td className="px-4 py-3">{row.assigned}</td>

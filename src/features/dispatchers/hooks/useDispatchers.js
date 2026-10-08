@@ -3,13 +3,19 @@ import { dispatchersApi } from '../api/dispatchersApi'
 
 export const dispatcherKeys = {
   all: ['dispatchers'],
-  list: (params) => ['dispatchers', params],
 }
 
-export function useDispatchers(params = {}) {
+/**
+ * Every dispatcher, fetched once and shared by all screens (the list is
+ * small). Filters are applied client-side with `select`, so the dispatchers
+ * page, selects and dialogs reuse the same cached request.
+ */
+export function useDispatchers({ status } = {}) {
   return useQuery({
-    queryKey: dispatcherKeys.list(params),
-    queryFn: () => dispatchersApi.list(params),
+    queryKey: dispatcherKeys.all,
+    queryFn: () => dispatchersApi.list(),
+    staleTime: 60_000,
+    select: status ? (users) => users.filter((u) => u.status === status) : undefined,
   })
 }
 

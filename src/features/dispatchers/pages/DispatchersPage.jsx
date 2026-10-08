@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Inbox, Pencil, Power, RotateCcw, UserPlus, X } from 'lucide-react'
+import { Check, Inbox, Pencil, Power, RotateCcw, Trash2, UserPlus, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { UserStatusBadge } from '@/components/badges'
@@ -9,6 +9,8 @@ import { formatDateTime } from '@/lib/format'
 import { errorMessage, fieldErrors } from '@/lib/http'
 import { dispatchersApi } from '../api/dispatchersApi'
 import { allocationPayload, describeAllocation, emptyAllocation, LeadAllocationFields } from '../components/LeadAllocationFields'
+import { useConfirm } from '@/components/feedback/ConfirmProvider'
+import { DeleteDispatcherDialog } from '../components/DeleteDispatcherDialog'
 import { dispatcherKeys, useDispatchers } from '../hooks/useDispatchers'
 
 const emptyForm = { first_name: '', last_name: '', email: '', phone: '', password: '', password_confirmation: '' }
@@ -176,11 +178,13 @@ function DeactivateDialog({ dispatcher, onClose, onConfirm }) {
 
 export default function DispatchersPage() {
   const [status, setStatus] = useState('')
-  const query = useDispatchers(status ? { status } : {})
+  const query = useDispatchers({ status })
+  const confirm = useConfirm()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(undefined) // undefined = closed, null = create
   const [deactivating, setDeactivating] = useState(null)
   const [allocating, setAllocating] = useState(null) // { dispatcher, mode: 'approve' | 'allocate' }
+  const [deleting, setDeleting] = useState(null)
   const [busy, setBusy] = useState(null)
 
   const refresh = () =>
@@ -266,7 +270,17 @@ export default function DispatchersPage() {
                             <Button size="sm" variant="success" icon={Check} onClick={() => setAllocating({ dispatcher: u, mode: 'approve' })}>
                               Approuver
                             </Button>
-                            <Button size="sm" variant="secondary" icon={X} loading={busy === `${u.id}-reject`} onClick={() => run(u, 'reject', null, 'Inscription refusée')}>
+                            <Button size="sm" variant="secondary" icon={X} loading={busy === `${u.id}-reject`} onClick={async () => {
+                                if (
+                                  await confirm({
+                                    title: `Refuser l’inscription de ${u.full_name} ?`,
+                                    description: 'La personne ne pourra pas se connecter. Vous pourrez réactiver le compte plus tard.',
+                                    confirmLabel: 'Refuser',
+                                    tone: 'danger',
+                                  })
+                                )
+                                  run(u, 'reject', null, 'Inscription refusée')
+                              }}>
                               Refuser
                             </Button>
                           </>
@@ -286,7 +300,16 @@ export default function DispatchersPage() {
                             Activer
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(u)} aria-label={`Modifier ${u.full_name}`} />
+                        <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(u)} aria-label={`Modifier ${u.full_name}`} title="Modifier" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={Trash2}
+                          className="text-rose-600 hover:bg-rose-50"
+                          onClick={() => setDeleting(u)}
+                          aria-label={`Supprimer ${u.full_name}`}
+                          title="Supprimer le compte"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -303,6 +326,16 @@ export default function DispatchersPage() {
           onClose={() => setEditing(undefined)}
           onSaved={async () => {
             setEditing(undefined)
+            await Promise.all([refresh(), queryClient.invalidateQueries({ queryKey: ['leads'] })])
+          }}
+        />
+      )}
+      {deleting && (
+        <DeleteDispatcherDialog
+          dispatcher={deleting}
+          onClose={() => setDeleting(null)}
+          onDeleted={async () => {
+            setDeleting(null)
             await Promise.all([refresh(), queryClient.invalidateQueries({ queryKey: ['leads'] })])
           }}
         />

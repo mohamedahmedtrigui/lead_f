@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Mail, MessageCircle, Phone, Save, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { LeadStatusBadge } from '@/components/badges'
+import { useConfirm } from '@/components/feedback/ConfirmProvider'
 import { Button, Card, CardHeader, Checkbox, EmptyState, ErrorState, Input, PageLoader, Select } from '@/components/ui'
 import { LEAD_STATUS, toOptions } from '@/constants/domain'
 import { ScoreGauge } from '@/features/qualification/components/ScoreGauge'
@@ -20,8 +21,26 @@ function StatusForm({ lead, onSaved }) {
   const [reason, setReason] = useState('')
   const [resetNrp, setResetNrp] = useState(false)
   const [saving, setSaving] = useState(false)
+  const confirm = useConfirm()
 
   async function save() {
+    const changes = [
+      status !== lead.status && `Statut : ${LEAD_STATUS[lead.status].label} → ${LEAD_STATUS[status].label}`,
+      resetNrp && `Compteur NRP remis à 0 (actuellement ${lead.nrp.attempts} / ${lead.nrp.max})`,
+    ].filter(Boolean)
+    const ok = await confirm({
+      title: `Modifier le lead ${lead.name} ?`,
+      description: (
+        <ul className="list-disc space-y-1 pl-4">
+          {changes.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      ),
+      confirmLabel: 'Enregistrer',
+      tone: ['INVALID', 'NOT_INTERESTED', 'CONVERTED'].includes(status) ? 'danger' : undefined,
+    })
+    if (!ok) return
     setSaving(true)
     try {
       await leadsApi.updateStatus(lead.id, { status, reason: reason || null, reset_nrp: resetNrp })

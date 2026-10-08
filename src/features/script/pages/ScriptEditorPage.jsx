@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, RotateCcw, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Alert, Button, Card, CardHeader, ErrorState, Input, PageHeader, PageLoader, Textarea } from '@/components/ui'
+import { useConfirm } from '@/components/feedback/ConfirmProvider'
 import { ScriptBlock } from '@/features/qualification/components/ScriptBlock'
 import { PLACEHOLDERS } from '@/features/qualification/utils/placeholders'
 import { cn } from '@/lib/cn'
@@ -74,6 +75,7 @@ function StepEditor({ step, defaults, onSaved }) {
   const [form, setForm] = useState(() => toForm(step))
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const confirm = useConfirm()
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
   const promptKeys = Object.keys(defaults?.prompts ?? {})
@@ -95,7 +97,13 @@ function StepEditor({ step, defaults, onSaved }) {
   }
 
   async function reset() {
-    if (!window.confirm('Restaurer le texte par défaut de cette étape ?')) return
+    const ok = await confirm({
+      title: `Restaurer le texte par défaut de « ${step.title} » ?`,
+      description: 'Vos modifications de cette étape (discours, questions, libellés, réponses) seront remplacées. Les dispatchers verront immédiatement le texte par défaut.',
+      confirmLabel: 'Restaurer',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       const restored = await scriptApi.reset(step.id)
       setForm(toForm(restored))

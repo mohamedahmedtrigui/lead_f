@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileSpreadsheet, Upload } from 'lucide-react'
 import { toast } from 'sonner'
+import { useConfirm } from '@/components/feedback/ConfirmProvider'
 import { Alert, Button, Card, CardHeader, Checkbox, PageHeader, Select, Spinner } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { formatDateTime } from '@/lib/format'
@@ -20,8 +21,20 @@ export default function LeadImportPage() {
   const [strategy, setStrategy] = useState('round_robin')
   const [result, setResult] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const confirm = useConfirm()
 
   async function upload() {
+    if (distribute) {
+      const ok = await confirm({
+        title: `Importer « ${file.name} » et distribuer ?`,
+        description:
+          'Les nouveaux leads non assignés seront répartis automatiquement entre les dispatchers actifs (' +
+          (strategy === 'balanced' ? 'équilibrage de charge' : 'round-robin') +
+          '). Les leads existants ne sont jamais modifiés.',
+        confirmLabel: 'Importer et distribuer',
+      })
+      if (!ok) return
+    }
     setUploading(true)
     setResult(null)
     try {

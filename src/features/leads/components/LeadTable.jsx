@@ -6,6 +6,7 @@ import { NEXT_ACTION } from '@/constants/domain'
 import { useScript } from '@/features/script/hooks/useScript'
 import { cn } from '@/lib/cn'
 import { formatDateTime, formatPhone, formatRelative } from '@/lib/format'
+import { usePrefetchLead } from '../hooks/useLeads'
 
 function SortHeader({ field, sort, onSort, children, className }) {
   if (!onSort) return <th className={cn('px-4 py-3', className)}>{children}</th>
@@ -31,6 +32,7 @@ function SortHeader({ field, sort, onSort, children, className }) {
  */
 export function LeadTable({ leads, mode = 'dispatcher', selected, onToggle, onToggleAll, sort, onSort }) {
   const { label } = useScript()
+  const prefetch = usePrefetchLead()
   const admin = mode === 'admin'
   const allSelected = admin && leads.length > 0 && leads.every((lead) => selected?.has(lead.id))
 
@@ -77,7 +79,11 @@ export function LeadTable({ leads, mode = 'dispatcher', selected, onToggle, onTo
             const q = lead.qualification
             const href = admin ? `/admin/leads/${lead.id}` : `/leads/${lead.id}/call`
             return (
-              <tr key={lead.id} className={cn('transition-colors hover:bg-brand-50/40', selected?.has(lead.id) && 'bg-brand-50/60')}>
+              <tr
+                key={lead.id}
+                onMouseEnter={() => prefetch(lead.id)}
+                className={cn('transition-colors hover:bg-brand-50/40', selected?.has(lead.id) && 'bg-brand-50/60')}
+              >
                 {admin && (
                   <td className="px-4 py-3">
                     <input

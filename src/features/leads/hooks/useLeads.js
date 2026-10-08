@@ -32,6 +32,13 @@ export function useLeadTimeline(id) {
   })
 }
 
+/** Warms the lead detail cache (on hover) so the page opens instantly. */
+export function usePrefetchLead() {
+  const queryClient = useQueryClient()
+  return (id) =>
+    queryClient.prefetchQuery({ queryKey: leadKeys.detail(id), queryFn: () => leadsApi.get(id), staleTime: 15_000 })
+}
+
 /** Invalidates every lead-related cache (lists, details, dashboards). */
 export function useInvalidateLeads() {
   const queryClient = useQueryClient()
