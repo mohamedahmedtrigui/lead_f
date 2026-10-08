@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, CornerDownRight } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const columnsClass = {
@@ -9,11 +9,25 @@ const columnsClass = {
   7: 'grid-cols-4 sm:grid-cols-7',
 }
 
+/** What the dispatcher answers back once the client has replied. */
+export function ReplyBubble({ children }) {
+  if (!children) return null
+  return (
+    <div className="mt-3 flex items-start gap-2 rounded-xl border border-brand-200 bg-white px-4 py-3 shadow-sm">
+      <CornerDownRight className="mt-0.5 size-4 shrink-0 text-brand-500" />
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">Réponse à dire</p>
+        <p className="mt-0.5 text-[15px] leading-relaxed text-slate-800">« {children} »</p>
+      </div>
+    </div>
+  )
+}
+
 /**
  * Large selectable answers. When `shortcuts` is set, the number shown on each
  * card is the keyboard key selecting it (handled by the wizard).
  */
-export function OptionCards({ options, value, onChange, multiple = false, columns = 2, shortcuts = false, error, compact = false }) {
+export function OptionCards({ options, value, onChange, multiple = false, columns = 2, shortcuts = false, error, compact = false, reply }) {
   const isSelected = (optionValue) => (multiple ? (value ?? []).includes(optionValue) : value === optionValue)
 
   const toggle = (optionValue) => {
@@ -60,18 +74,21 @@ export function OptionCards({ options, value, onChange, multiple = false, column
         })}
       </div>
       {error && <p className="mt-2 text-xs font-medium text-rose-600">{error}</p>}
+      <ReplyBubble>{reply}</ReplyBubble>
     </div>
   )
 }
 
 /** Yes / No toggle used for boolean answers. */
-export function YesNo({ value, onChange, yesLabel = 'Oui', noLabel = 'Non' }) {
+export function YesNo({ value, onChange, yesLabel = 'Oui', noLabel = 'Non', options, ...props }) {
+  const labelOf = (key, fallback) => options?.find((o) => o.value === key)?.label ?? fallback
   return (
     <OptionCards
       columns={2}
+      {...props}
       options={[
-        { value: true, label: yesLabel },
-        { value: false, label: noLabel },
+        { value: true, label: labelOf('YES', yesLabel) },
+        { value: false, label: labelOf('NO', noLabel) },
       ]}
       value={value}
       onChange={(v) => onChange(v === value ? null : v)}

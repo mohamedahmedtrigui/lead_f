@@ -4,8 +4,8 @@ import { Button, Input, Textarea } from '@/components/ui'
 import { localInputToIso } from '@/lib/format'
 import { OptionCards } from '../components/OptionCards'
 
-/** LEVEL 1 — Introduction: permission to talk for ~5 minutes. */
-export function IntroductionStep({ answers, setField, errors, optionsFor, actions }) {
+/** 1. Introduction: permission to talk for ~5 minutes. */
+export function IntroductionStep({ answers, setField, errors, optionsFor, reply, actions }) {
   const [callbackAt, setCallbackAt] = useState('')
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -27,13 +27,14 @@ export function IntroductionStep({ answers, setField, errors, optionsFor, action
         value={answers.call_availability}
         onChange={(v) => setField('call_availability', v)}
         error={answers.call_availability !== 'CALLBACK' ? errors.call_availability : null}
+        reply={reply('call_availability')}
       />
 
       {answers.call_availability === 'CALLBACK' && (
         <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/60 p-4">
           <p className="flex items-center gap-2 text-sm font-semibold text-violet-800">
             <CalendarClock className="size-4" />
-            Proposez un créneau précis au client
+            Notez le créneau proposé par le client
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
@@ -54,8 +55,8 @@ export function IntroductionStep({ answers, setField, errors, optionsFor, action
   )
 }
 
-/** LEVEL 2 — Who needs the transport. */
-export function BeneficiaryStep({ answers, setField, errors, optionsFor, prompt }) {
+/** 2. Who needs the transport. */
+export function BeneficiaryStep({ answers, setField, errors, optionsFor, prompt, reply }) {
   return (
     <div className="space-y-4">
       <OptionCards
@@ -65,6 +66,7 @@ export function BeneficiaryStep({ answers, setField, errors, optionsFor, prompt 
         value={answers.beneficiary}
         onChange={(v) => setField('beneficiary', v)}
         error={errors.beneficiary}
+        reply={reply('beneficiary')}
       />
       <Input
         label={prompt('beneficiary_details', 'Précisions')}
@@ -76,8 +78,8 @@ export function BeneficiaryStep({ answers, setField, errors, optionsFor, prompt 
   )
 }
 
-/** LEVEL 3 — Type of trip. */
-export function NeedStep({ answers, setField, errors, optionsFor, prompt }) {
+/** 3. Type of trip (personal or B2B). */
+export function NeedStep({ answers, setField, errors, optionsFor, prompt, reply }) {
   return (
     <div className="space-y-4">
       <OptionCards
@@ -87,6 +89,7 @@ export function NeedStep({ answers, setField, errors, optionsFor, prompt }) {
         value={answers.transport_need}
         onChange={(v) => setField('transport_need', v)}
         error={errors.transport_need}
+        reply={reply('transport_need')}
       />
       <Textarea
         rows={2}

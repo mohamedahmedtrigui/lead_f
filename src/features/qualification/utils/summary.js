@@ -1,6 +1,6 @@
 import { formatDateTime } from '@/lib/format'
 import { NEXT_ACTION } from '@/constants/domain'
-import { isB2b } from '../config/steps'
+import { isB2b, isSharedApplicable } from '../config/steps'
 
 const yesNo = (value) => (value === true ? 'Oui' : value === false ? 'Non' : null)
 
@@ -46,6 +46,7 @@ export function buildSummarySections(lead, answers, server, label) {
       step: 'schedule',
       rows: [
         ['Fréquence', label('frequency', answers.frequency)],
+        ['Trajets / jour', b2b ? null : answers.trips_per_day],
         ['Trajets / semaine', answers.trips_per_week],
         ['Passagers', b2b ? answers.estimated_passengers_per_trip && `${answers.estimated_passengers_per_trip} / trajet` : answers.passengers_count],
       ],
@@ -56,9 +57,11 @@ export function buildSummarySections(lead, answers, server, label) {
       rows: [
         [
           'Transport partagé',
-          [label('shared_transport', answers.shared_transport), answers.shared_transport === 'YES' && label('shared_direction', answers.shared_direction)]
-            .filter(Boolean)
-            .join(' · '),
+          isSharedApplicable(answers)
+            ? [label('shared_transport', answers.shared_transport), answers.shared_transport === 'YES' && label('shared_direction', answers.shared_direction)]
+                .filter(Boolean)
+                .join(' · ')
+            : 'Non proposé (groupe ou B2B)',
         ],
         [
           'Expérience MiralDrive',
@@ -80,6 +83,8 @@ export function buildSummarySections(lead, answers, server, label) {
           ? [
               ['Entreprise', answers.company_name],
               ['Employés concernés', answers.employees_concerned],
+              ['Trajets / jour', answers.trips_per_day],
+              ['Mêmes horaires', yesNo(answers.b2b_same_schedule)],
               ['Décideur', label('decision_role', answers.decision_role)],
             ]
           : []),
@@ -89,6 +94,7 @@ export function buildSummarySections(lead, answers, server, label) {
       title: 'Qualification',
       step: 'qualification',
       rows: [
+        ['Récap validé par le client', yesNo(answers.recap_confirmed)],
         ['Score d’intérêt', server?.interest_score != null ? `${server.interest_score} / 100` : null],
         ['Niveau', server?.interest_level],
         ['Priorité', answers.priority_stars ? `${answers.priority_stars} / 5` : null],

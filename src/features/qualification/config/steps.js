@@ -1,8 +1,10 @@
 /**
  * Qualification wizard definition.
  *
- * Conversation order (business rule): need -> route -> frequency ->
- * preferences -> shared transport -> B2B -> pain points -> opportunity.
+ * Conversation order follows the MiralDrive call script: introduction ->
+ * who -> trip type -> route & frequency -> passengers -> shared transport
+ * (single person only) -> experience -> current solution -> B2B -> recap
+ * validated by the client -> agent evaluation -> closing.
  * Wording comes from the admin-editable script (GET /script); this file only
  * defines structure, conditions and client-side validation, which mirrors
  * App\Domain\Qualification\Support\QualificationRules on the server.
@@ -41,9 +43,11 @@ export const ANSWER_FIELDS = [
   'company_size',
   'employees_concerned',
   'trips_per_day',
+  'b2b_same_schedule',
   'decision_maker_name',
   'decision_role',
   'main_priority',
+  'recap_confirmed',
   'wants_quotation',
   'wants_callback',
   'priority_stars',
@@ -53,6 +57,9 @@ export const ANSWER_FIELDS = [
 ]
 
 export const isB2b = (a) => ['EMPLOYEES', 'COMPANY'].includes(a.beneficiary) || a.transport_need === 'EMPLOYEE'
+
+/** Shared transport is only proposed to a single person, outside B2B. */
+export const isSharedApplicable = (a) => !isB2b(a) && (a.passengers_count ?? 1) <= 1
 
 /** Next actions that end the conversation early (partial qualification allowed). */
 export const isEarlyExit = (a) => ['NOT_INTERESTED', 'NRP'].includes(a.next_action)
@@ -98,20 +105,23 @@ export const STEPS = [
   {
     key: 'route',
     primaryField: 'trip_type',
-    fields: ['departure', 'destination', 'trip_type', 'departure_time', 'return_time'],
+    fields: [
+      'departure',
+      'destination',
+      'trip_type',
+      'departure_time',
+      'return_time',
+      'frequency',
+      'days_of_week',
+      'trips_per_day',
+      'trips_per_week',
+      'is_recurring',
+    ],
     validate: (a) =>
       check({
         departure: required(a.departure) && 'Le lieu de départ est requis.',
         destination: required(a.destination) && 'La destination est requise.',
-        trip_type: required(a.trip_type) && 'Aller simple ou aller-retour ?',
-      }),
-  },
-  {
-    key: 'schedule',
-    primaryField: 'frequency',
-    fields: ['frequency', 'days_of_week', 'trips_per_week', 'is_recurring'],
-    validate: (a) =>
-      check({
+        trip_type: required(a.trip_type) && 'Aller seulement ou aller-retour ?',
         frequency: required(a.frequency) && 'Sélectionnez la fréquence.',
         days_of_week: a.frequency === 'FIXED_DAYS' && required(a.days_of_week) && 'Sélectionnez au moins un jour.',
       }),
@@ -128,6 +138,7 @@ export const STEPS = [
   {
     key: 'shared',
     primaryField: 'shared_transport',
+    visible: isSharedApplicable,
     fields: ['shared_transport', 'shared_direction'],
     validate: (a) =>
       check({
@@ -155,7 +166,7 @@ export const STEPS = [
     key: 'b2b',
     primaryField: 'decision_role',
     visible: isB2b,
-    fields: ['company_name', 'company_size', 'employees_concerned', 'trips_per_day', 'decision_maker_name', 'decision_role'],
+    fields: ['company_name', 'company_size', 'employees_concerned', 'b2b_same_schedule', 'decision_maker_name', 'decision_role'],
     validate: (a) =>
       check({
         company_name: required(a.company_name) && 'Le nom de l’entreprise est requis.',
@@ -163,15 +174,22 @@ export const STEPS = [
       }),
   },
   {
-    key: 'priorities',
-    primaryField: 'main_priority',
-    fields: ['main_priority'],
-    validate: (a) => check({ main_priority: required(a.main_priority) && 'Sélectionnez la priorité principale.' }),
+    key: 'recap',
+    primaryField: 'recap_confirmed',
+    fields: ['recap_confirmed'],
+    validate: (a) =>
+      check({
+        recap_confirmed:
+          a.recap_confirmed !== true &&
+          (a.recap_confirmed === false
+            ? 'Corrigez les informations puis faites valider le récapitulatif.'
+            : 'Faites valider le récapitulatif par le client.'),
+      }),
   },
   {
     key: 'qualification',
     primaryField: null,
-    fields: ['wants_quotation', 'wants_callback', 'priority_stars'],
+    fields: ['wants_quotation', 'wants_callback', 'priority_stars', 'main_priority'],
     validate: (a) => check({ priority_stars: required(a.priority_stars) && 'Attribuez une priorité (1 à 5 étoiles).' }),
   },
   {

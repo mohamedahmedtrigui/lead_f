@@ -4,6 +4,7 @@ import { Eye, RotateCcw, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Alert, Button, Card, CardHeader, ErrorState, Input, PageHeader, PageLoader, Textarea } from '@/components/ui'
 import { ScriptBlock } from '@/features/qualification/components/ScriptBlock'
+import { PLACEHOLDERS } from '@/features/qualification/utils/placeholders'
 import { cn } from '@/lib/cn'
 import { formatDateTime } from '@/lib/format'
 import { errorMessage, fieldErrors } from '@/lib/http'
@@ -39,6 +40,10 @@ const FIELD_LABELS = {
   company_size: 'Taille',
   employees_concerned: 'Employés concernés',
   trips_per_day: 'Trajets / jour',
+  b2b_same_schedule: 'Mêmes horaires (B2B)',
+  recap_confirmed: 'Validation du récapitulatif',
+  passengers_count: 'Nombre de passagers',
+  destination: 'Destination',
   decision_maker_name: 'Nom du décideur',
   decision_role: 'Rôle décisionnel',
   main_priority: 'Priorité principale',
@@ -61,6 +66,7 @@ function toForm(step) {
     options: Object.fromEntries(
       Object.entries(step.options ?? {}).map(([field, options]) => [field, Object.fromEntries(options.map((o) => [o.value, o.label]))]),
     ),
+    responses: Object.fromEntries(Object.entries(step.responses ?? {}).map(([field, replies]) => [field, { ...replies }])),
   }
 }
 
@@ -153,25 +159,47 @@ function StepEditor({ step, defaults, onSaved }) {
 
           {optionFields.map((field) => (
             <fieldset key={field} className="space-y-3 rounded-xl border border-slate-200 p-4">
-              <legend className="px-1 text-sm font-semibold text-slate-700">Réponses : {FIELD_LABELS[field] ?? field}</legend>
-              <div className="grid gap-3 md:grid-cols-2">
+              <legend className="px-1 text-sm font-semibold text-slate-700">Réponses du client : {FIELD_LABELS[field] ?? field}</legend>
+              <div className="space-y-3">
                 {defaults.options[field].map((option) => (
-                  <Input
-                    key={option.value}
-                    label={<span className="font-mono text-xs text-slate-500">{option.value}</span>}
-                    value={form.options[field]?.[option.value] ?? ''}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, options: { ...f.options, [field]: { ...f.options[field], [option.value]: e.target.value } } }))
-                    }
-                    error={errors[`options.${field}.${option.value}`]}
-                    maxLength={120}
-                  />
+                  <div key={option.value} className="grid gap-2 rounded-lg bg-slate-50/70 p-2 md:grid-cols-[200px_1fr]">
+                    <Input
+                      label={<span className="font-mono text-xs text-slate-500">▸ {option.value}</span>}
+                      value={form.options[field]?.[option.value] ?? ''}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, options: { ...f.options, [field]: { ...f.options[field], [option.value]: e.target.value } } }))
+                      }
+                      error={errors[`options.${field}.${option.value}`]}
+                      maxLength={120}
+                    />
+                    <Textarea
+                      rows={2}
+                      label="Réponse à dire (optionnel)"
+                      value={form.responses[field]?.[option.value] ?? ''}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, responses: { ...f.responses, [field]: { ...f.responses[field], [option.value]: e.target.value } } }))
+                      }
+                      error={errors[`responses.${field}.${option.value}`]}
+                      maxLength={1000}
+                    />
+                  </div>
                 ))}
               </div>
             </fieldset>
           ))}
 
-          <Textarea label="Conseil au dispatcher" rows={2} value={form.tips} onChange={set('tips')} error={errors.tips} maxLength={2000} />
+          <div className="rounded-xl border border-dashed border-slate-300 p-3 text-xs text-slate-500">
+            <p className="mb-1 font-semibold text-slate-600">Éléments remplis automatiquement pendant l’appel</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {PLACEHOLDERS.map(([token, description]) => (
+                <span key={token}>
+                  <code className="rounded bg-slate-100 px-1 text-slate-700">{token}</code> {description}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <Textarea label="Note agent / conseil au dispatcher" rows={2} value={form.tips} onChange={set('tips')} error={errors.tips} maxLength={2000} />
         </div>
       </Card>
 

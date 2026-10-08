@@ -1,7 +1,11 @@
 import { Lightbulb, MessageSquareQuote, Target } from 'lucide-react'
+import { renderTemplate } from '../utils/placeholders'
 
-/** What the dispatcher should say for the current step (admin-editable). */
-export function ScriptBlock({ step, children }) {
+/**
+ * What the dispatcher should say for the current step (admin-editable).
+ * Placeholders such as [Prénom] or [DÉPART] are filled from `context`.
+ */
+export function ScriptBlock({ step, context, children }) {
   if (!step) return null
   const paragraphs = (step.script ?? '').split(/\n{2,}/).filter(Boolean)
 
@@ -21,7 +25,7 @@ export function ScriptBlock({ step, children }) {
           </span>
           <div className="space-y-2 text-[15px] leading-relaxed text-slate-700">
             {paragraphs.map((paragraph) => (
-              <p key={paragraph}>« {paragraph} »</p>
+              <p key={paragraph}>« {renderTemplate(paragraph, context)} »</p>
             ))}
           </div>
         </div>
@@ -30,7 +34,7 @@ export function ScriptBlock({ step, children }) {
       {step.question && (
         <p className="flex items-start gap-3 text-lg font-semibold leading-snug text-slate-900">
           <MessageSquareQuote className="mt-0.5 size-5 shrink-0 text-brand-600" />
-          {step.question}
+          <span>{renderTemplate(step.question, context)}</span>
         </p>
       )}
 

@@ -1,13 +1,27 @@
 import { Wand2 } from 'lucide-react'
 import { Alert, Button, Checkbox, Field, Input, Stars, Textarea } from '@/components/ui'
 import { isoToLocalInput, localInputToIso } from '@/lib/format'
-import { OptionCards } from '../components/OptionCards'
+import { OptionCards, YesNo } from '../components/OptionCards'
 import { ScoreGauge } from '../components/ScoreGauge'
 import { SummaryView } from '../components/SummaryView'
 import { buildSummaryDraft } from '../utils/summary'
 
-/** LEVEL 12 — Qualification: computed score + dispatcher priority. */
-export function QualificationStep({ answers, setField, errors, prompt, server }) {
+/** 10. Recap read back to the client ("C'est bien ça ?"). */
+export function RecapStep({ answers, setField, errors, optionsFor, reply }) {
+  return (
+    <YesNo
+      shortcuts
+      options={optionsFor('recap_confirmed')}
+      value={answers.recap_confirmed}
+      onChange={(v) => setField('recap_confirmed', v)}
+      error={errors.recap_confirmed}
+      reply={reply('recap_confirmed')}
+    />
+  )
+}
+
+/** 11. Agent evaluation: computed score + dispatcher priority (internal). */
+export function QualificationStep({ answers, setField, errors, prompt, optionsFor, server }) {
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
@@ -28,14 +42,48 @@ export function QualificationStep({ answers, setField, errors, prompt, server })
       <Field label={prompt('priority_stars', 'Priorité commerciale')} required error={errors.priority_stars} hint="Votre ressenti sur l’opportunité (1 = faible, 5 = très forte).">
         <Stars size="lg" value={answers.priority_stars} onChange={(v) => setField('priority_stars', v)} />
       </Field>
+      <Field label={prompt('main_priority', 'Priorité exprimée par le client (si mentionnée)')}>
+        <OptionCards
+          columns={3}
+          options={optionsFor('main_priority')}
+          value={answers.main_priority}
+          onChange={(v) => setField('main_priority', v === answers.main_priority ? null : v)}
+        />
+      </Field>
     </div>
   )
 }
 
-/** Closing: internal summary note + mandatory next action. */
-export function ClosingStep({ answers, setField, errors, optionsFor, prompt, label }) {
+/** 12. Closing: next action (with its closing speech) + internal summary. */
+export function ClosingStep({ answers, setField, errors, optionsFor, prompt, label, reply }) {
   return (
     <div className="space-y-5">
+      <Field label={prompt('next_action', 'Prochaine action')} required error={errors.next_action}>
+        <OptionCards
+          shortcuts
+          columns={2}
+          options={optionsFor('next_action')}
+          value={answers.next_action}
+          onChange={(v) => setField('next_action', v)}
+          reply={reply('next_action')}
+        />
+      </Field>
+
+      {answers.next_action === 'CALLBACK' && (
+        <Input
+          type="datetime-local"
+          required
+          label={prompt('callback_at', 'Date et heure du rappel')}
+          value={isoToLocalInput(answers.callback_at)}
+          onChange={(e) => setField('callback_at', localInputToIso(e.target.value))}
+          error={errors.callback_at}
+        />
+      )}
+
+      {answers.next_action === 'NRP' && (
+        <Alert tone="warning">La communication a été coupée : une tentative NRP sera comptabilisée pour ce lead.</Alert>
+      )}
+
       <div>
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-medium text-slate-700">
@@ -54,30 +102,11 @@ export function ClosingStep({ answers, setField, errors, optionsFor, prompt, lab
           maxLength={5000}
         />
       </div>
-
-      <Field label={prompt('next_action', 'Prochaine action')} required error={errors.next_action}>
-        <OptionCards shortcuts columns={2} options={optionsFor('next_action')} value={answers.next_action} onChange={(v) => setField('next_action', v)} />
-      </Field>
-
-      {answers.next_action === 'CALLBACK' && (
-        <Input
-          type="datetime-local"
-          required
-          label={prompt('callback_at', 'Date et heure du rappel')}
-          value={isoToLocalInput(answers.callback_at)}
-          onChange={(e) => setField('callback_at', localInputToIso(e.target.value))}
-          error={errors.callback_at}
-        />
-      )}
-
-      {answers.next_action === 'NRP' && (
-        <Alert tone="warning">La communication a été coupée : une tentative NRP sera comptabilisée pour ce lead.</Alert>
-      )}
     </div>
   )
 }
 
-/** Final summary, reviewed before completing the qualification. */
+/** 13. Final internal summary, reviewed before completing the qualification. */
 export function SummaryStep({ lead, answers, server, goTo }) {
   return <SummaryView lead={lead} answers={answers} server={server} onEdit={goTo} />
 }

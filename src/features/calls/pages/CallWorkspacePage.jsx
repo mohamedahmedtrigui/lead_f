@@ -14,6 +14,7 @@ import { ScriptBlock } from '@/features/qualification/components/ScriptBlock'
 import { SummaryView } from '@/features/qualification/components/SummaryView'
 import { useQualificationWizard } from '@/features/qualification/hooks/useQualificationWizard'
 import { useScript } from '@/features/script/hooks/useScript'
+import { buildScriptContext } from '@/features/qualification/utils/placeholders'
 import { errorMessage, fieldErrors } from '@/lib/http'
 import { CustomerPanel } from '../components/CustomerPanel'
 import { LiveSummaryPanel } from '../components/LiveSummaryPanel'
@@ -164,7 +165,7 @@ export default function CallWorkspacePage() {
 
               {canWork && (
                 <Card className="p-6">
-                  <ScriptBlock step={script.byKey.introduction} />
+                  <ScriptBlock step={script.byKey.introduction} context={buildScriptContext({ user, lead })} />
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     <Button size="lg" icon={lead.qualification ? RotateCcw : PhoneCall} loading={startCall.isPending} onClick={() => startCall.mutate()}>
                       {lead.qualification ? 'Nouvel appel / reprendre la qualification' : 'Démarrer l’appel'}
