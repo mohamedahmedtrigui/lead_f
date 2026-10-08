@@ -56,7 +56,7 @@ export function LeadTable({ leads, mode = 'dispatcher', selected, onToggle, onTo
             <th className="px-4 py-3">Téléphone</th>
             {admin && <th className="px-4 py-3">Dispatcher</th>}
             <th className="px-4 py-3">Type</th>
-            <SortHeader field="status" sort={sort} onSort={onSort}>
+            <SortHeader field="priority" sort={sort} onSort={onSort}>
               Statut
             </SortHeader>
             <SortHeader field="interest_score" sort={sort} onSort={onSort}>

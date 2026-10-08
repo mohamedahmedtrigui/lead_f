@@ -6,7 +6,8 @@ export function useLeadListState(initial = {}) {
   const [search, setSearch] = useState('')
   const [statuses, setStatuses] = useState(initial.statuses ?? [])
   const [extra, setExtra] = useState(initial.extra ?? {})
-  const [sort, setSort] = useState({ field: 'source_created_at', direction: 'desc' })
+  // Default: most important statuses first (À traiter, En cours, Rappel, NRP…)
+  const [sort, setSort] = useState({ field: 'priority', direction: 'asc' })
   const [page, setPage] = useState(1)
   const debouncedSearch = useDebouncedValue(search)
 
@@ -16,7 +17,11 @@ export function useLeadListState(initial = {}) {
   }
 
   const toggleSort = (field) => {
-    setSort((current) => ({ field, direction: current.field === field && current.direction === 'desc' ? 'asc' : 'desc' }))
+    setSort((current) => {
+      const initial = field === 'priority' ? 'asc' : 'desc'
+      if (current.field !== field) return { field, direction: initial }
+      return { field, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+    })
     setPage(1)
   }
 
