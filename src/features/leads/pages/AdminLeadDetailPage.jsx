@@ -11,6 +11,7 @@ import { formatDateTime, formatPhone, whatsappLink } from '@/lib/format'
 import { errorMessage } from '@/lib/http'
 import { leadsApi } from '../api/leadsApi'
 import { AssignDialog } from '../components/AssignDialog'
+import { LeadReportButton } from '../components/LeadReportButton'
 import { LeadTimeline } from '../components/LeadTimeline'
 import { useInvalidateLeads, useLeadQuery, useLeadTimeline } from '../hooks/useLeads'
 
@@ -87,6 +88,9 @@ export default function AdminLeadDetailPage() {
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-slate-900">{lead.name}</h1>
         <LeadStatusBadge status={lead.status} nrp={lead.nrp} />
+        <div className="ml-auto">
+          <LeadReportButton lead={lead} />
+        </div>
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-[320px_minmax(0,1fr)_380px]">

@@ -69,16 +69,26 @@ const TOKEN = /(\[[^\]]+\])/g
 const IS_TOKEN = /^\[[^\]]+\]$/
 const valueOf = (token, context) => context?.[normalize(token.slice(1, -1))]
 
+const LRM = '‎'
+const ARABIC_RUN = /[؀-ۿ]+(?:\s+[؀-ۿ]+)*/g
+
+/**
+ * Wraps Arabic words with left-to-right marks so that, in the mostly Latin
+ * dialect sentences, neighbouring digits and words keep their order
+ * ("elli تستحق 3lih" instead of "elli 3 تستحقlih"). Same rule as the PDF.
+ */
+export const isolateArabic = (text) => text.replaceAll(LRM, '').replace(ARABIC_RUN, (run) => `${LRM}${run}${LRM}`)
+
 /** Plain-text fill (labels, prompts): unknown placeholders are left as is. */
 export function fillText(text, context) {
   if (!text) return text
-  return text.replace(TOKEN, (token) => valueOf(token, context) || token)
+  return isolateArabic(text.replace(TOKEN, (token) => valueOf(token, context) || token))
 }
 
 /** Rich fill: known values highlighted in blue, missing ones in amber. */
 export function renderTemplate(text, context) {
   if (!text) return null
-  return text.split(TOKEN).map((part, index) => {
+  return isolateArabic(text).split(TOKEN).map((part, index) => {
     if (!IS_TOKEN.test(part)) return <Fragment key={index}>{part}</Fragment>
     const value = valueOf(part, context)
     return value ? (

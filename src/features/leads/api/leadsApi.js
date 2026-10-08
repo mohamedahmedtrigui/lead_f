@@ -23,6 +23,11 @@ export const leadsApi = {
     return data
   },
 
+  /** PDF file of the lead (details + full conversation + history). */
+  async report(id, { download = false } = {}) {
+    return http.get(`/leads/${id}/report`, { params: download ? { download: 1 } : {}, responseType: 'blob' })
+  },
+
   async addNote(id, body) {
     const { data } = await http.post(`/leads/${id}/notes`, { body })
     return data

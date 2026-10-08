@@ -8,6 +8,7 @@ import { Alert, Button, Card, ErrorState, PageLoader } from '@/components/ui'
 import { LEAD_STATUS, NEXT_ACTION } from '@/constants/domain'
 import { useAuth } from '@/features/auth/context/AuthContext'
 import { leadsApi } from '@/features/leads/api/leadsApi'
+import { LeadReportButton } from '@/features/leads/components/LeadReportButton'
 import { useInvalidateLeads, useLeadQuery, useLeadTimeline } from '@/features/leads/hooks/useLeads'
 import { QualificationWizard } from '@/features/qualification/components/QualificationWizard'
 import { ScriptBlock } from '@/features/qualification/components/ScriptBlock'
@@ -105,9 +106,12 @@ export default function CallWorkspacePage() {
         <Link to="/leads" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-brand-600">
           <ArrowLeft className="size-4" /> Mes leads
         </Link>
-        <Button variant="ghost" size="sm" iconRight={ChevronRight} onClick={goToNextLead}>
-          Lead suivant
-        </Button>
+        <div className="flex items-center gap-2">
+          <LeadReportButton lead={lead} variant="ghost" />
+          <Button variant="ghost" size="sm" iconRight={ChevronRight} onClick={goToNextLead}>
+            Lead suivant
+          </Button>
+        </div>
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_320px] 2xl:grid-cols-[340px_minmax(0,1fr)_360px]">
@@ -134,6 +138,7 @@ export default function CallWorkspacePage() {
                   <Button as={Link} to="/leads" variant="secondary">
                     Retour à mes leads
                   </Button>
+                  <LeadReportButton lead={lead} size="md" />
                   <Button iconRight={ChevronRight} onClick={goToNextLead}>
                     Lead suivant
                   </Button>
