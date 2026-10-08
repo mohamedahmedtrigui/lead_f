@@ -6,6 +6,13 @@ const toNumber = (value) => (value === '' ? null : Number(value))
 
 /** 6. Shared transportation (single person, outside B2B). */
 export function SharedStep({ answers, setField, errors, optionsFor, prompt, reply }) {
+  const roundTrip = answers.trip_type === 'ROUND_TRIP'
+
+  const choose = (value) => {
+    setField('shared_transport', value)
+    if (value === 'YES' && !roundTrip) setField('shared_direction', 'OUTBOUND')
+  }
+
   return (
     <div className="space-y-5">
       <OptionCards
@@ -13,11 +20,17 @@ export function SharedStep({ answers, setField, errors, optionsFor, prompt, repl
         columns={3}
         options={optionsFor('shared_transport')}
         value={answers.shared_transport}
-        onChange={(v) => setField('shared_transport', v)}
+        onChange={choose}
         error={errors.shared_transport}
-        reply={reply('shared_transport')}
+        // The "Oui" reply asks aller / retour / les deux: only for a round trip.
+        reply={answers.shared_transport === 'YES' && !roundTrip ? null : reply('shared_transport')}
       />
-      {answers.shared_transport === 'YES' && (
+      {answers.shared_transport === 'YES' && !roundTrip && (
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          Trajet <strong>aller seulement</strong> : le partage se fera à l’aller.
+        </p>
+      )}
+      {answers.shared_transport === 'YES' && roundTrip && (
         <Field label={prompt('shared_direction', 'Sens du partage')} required error={errors.shared_direction}>
           <OptionCards columns={3} options={optionsFor('shared_direction')} value={answers.shared_direction} onChange={(v) => setField('shared_direction', v)} />
         </Field>

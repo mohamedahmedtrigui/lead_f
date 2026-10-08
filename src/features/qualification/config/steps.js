@@ -143,7 +143,8 @@ export const STEPS = [
     validate: (a) =>
       check({
         shared_transport: required(a.shared_transport) && 'Notez la réponse du client.',
-        shared_direction: a.shared_transport === 'YES' && required(a.shared_direction) && 'Précisez le sens du partage.',
+        shared_direction:
+          a.shared_transport === 'YES' && a.trip_type === 'ROUND_TRIP' && required(a.shared_direction) && 'Précisez le sens du partage.',
       }),
   },
   {

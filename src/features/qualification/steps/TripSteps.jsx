@@ -60,7 +60,16 @@ export function RouteStep({ answers, setField, errors, optionsFor, prompt }) {
       </div>
 
       <Field label={prompt('trip_type', 'Aller seulement ou aller-retour ?')} required error={errors.trip_type}>
-        <OptionCards shortcuts options={optionsFor('trip_type')} value={answers.trip_type} onChange={(v) => setField('trip_type', v)} />
+        <OptionCards
+          shortcuts
+          options={optionsFor('trip_type')}
+          value={answers.trip_type}
+          onChange={(v) => {
+            setField('trip_type', v)
+            // No return leg: a shared trip can only be shared on the way out.
+            if (v !== 'ROUND_TRIP' && answers.shared_transport === 'YES') setField('shared_direction', 'OUTBOUND')
+          }}
+        />
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -148,7 +157,8 @@ export function PassengersStep({ answers, setField, errors, prompt }) {
           hint={`Si plusieurs personnes : « ${prompt('passengers_count', '9addeh تقريباً ?')} »`}
         >
           <div className="flex flex-wrap items-center gap-2">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
+            {/* One vehicle: 4 passengers max */}
+            {[1, 2, 3, 4].map((n) => (
               <button
                 key={n}
                 type="button"
@@ -162,16 +172,6 @@ export function PassengersStep({ answers, setField, errors, prompt }) {
                 {n}
               </button>
             ))}
-            <input
-              type="number"
-              min={1}
-              max={500}
-              aria-label="Autre nombre de passagers"
-              placeholder="7+"
-              className="h-12 w-24 rounded-xl border border-slate-300 px-3 text-center text-lg shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-              value={answers.passengers_count > 6 ? answers.passengers_count : ''}
-              onChange={(e) => setField('passengers_count', toNumber(e.target.value))}
-            />
           </div>
         </Field>
       )}
