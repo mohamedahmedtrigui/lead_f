@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Pencil, Power, RotateCcw, UserPlus, X } from 'lucide-react'
+import { Check, Inbox, Pencil, Power, RotateCcw, UserPlus, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { UserStatusBadge } from '@/components/badges'
@@ -8,6 +8,7 @@ import { USER_STATUS, toOptions } from '@/constants/domain'
 import { formatDateTime } from '@/lib/format'
 import { errorMessage, fieldErrors } from '@/lib/http'
 import { dispatchersApi } from '../api/dispatchersApi'
+import { allocationPayload, describeAllocation, emptyAllocation, LeadAllocationFields } from '../components/LeadAllocationFields'
 import { dispatcherKeys, useDispatchers } from '../hooks/useDispatchers'
 
 const emptyForm = { first_name: '', last_name: '', email: '', phone: '', password: '', password_confirmation: '' }
@@ -15,6 +16,7 @@ const emptyForm = { first_name: '', last_name: '', email: '', phone: '', passwor
 function DispatcherFormDialog({ dispatcher, onClose, onSaved }) {
   const editing = !!dispatcher
   const [form, setForm] = useState(editing ? { ...emptyForm, ...dispatcher, password: '', password_confirmation: '' } : emptyForm)
+  const [allocation, setAllocation] = useState(emptyAllocation)
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
@@ -25,9 +27,13 @@ function DispatcherFormDialog({ dispatcher, onClose, onSaved }) {
     const payload = { first_name: form.first_name, last_name: form.last_name, email: form.email, phone: form.phone }
     if (!editing || form.password) Object.assign(payload, { password: form.password, password_confirmation: form.password_confirmation })
     try {
-      if (editing) await dispatchersApi.update(dispatcher.id, payload)
-      else await dispatchersApi.create(payload)
-      toast.success(editing ? 'Dispatcher mis à jour' : 'Dispatcher créé et activé')
+      if (editing) {
+        await dispatchersApi.update(dispatcher.id, payload)
+        toast.success('Dispatcher mis à jour')
+      } else {
+        const created = await dispatchersApi.create({ ...payload, ...allocationPayload(allocation) })
+        toast.success('Dispatcher créé et activé', { description: describeAllocation(created.allocation) })
+      }
       await onSaved()
     } catch (error) {
       setErrors(fieldErrors(error))
@@ -61,7 +67,68 @@ function DispatcherFormDialog({ dispatcher, onClose, onSaved }) {
         <Input label="Téléphone" type="tel" value={form.phone ?? ''} onChange={update('phone')} error={errors.phone} className="sm:col-span-2" />
         <Input label="Mot de passe" type="password" required={!editing} value={form.password} onChange={update('password')} error={errors.password} autoComplete="new-password" />
         <Input label="Confirmation" type="password" required={!editing} value={form.password_confirmation} onChange={update('password_confirmation')} autoComplete="new-password" />
+        {!editing && (
+          <div className="sm:col-span-2">
+            <LeadAllocationFields value={allocation} onChange={setAllocation} error={errors.initial_leads} />
+          </div>
+        )}
       </div>
+    </Modal>
+  )
+}
+
+/** Approve a registration (optional leads) or allocate leads to an active dispatcher. */
+function AllocateDialog({ dispatcher, mode, onClose, onDone }) {
+  const approving = mode === 'approve'
+  const [allocation, setAllocation] = useState(emptyAllocation)
+  const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    setSaving(true)
+    setError(null)
+    try {
+      const result = approving
+        ? (await dispatchersApi.action(dispatcher.id, 'approve', allocationPayload(allocation))).allocation
+        : await dispatchersApi.allocate(dispatcher.id, allocationPayload(allocation))
+      toast.success(approving ? 'Compte approuvé' : 'Leads attribués', { description: describeAllocation(result) })
+      await onDone()
+    } catch (err) {
+      setError(fieldErrors(err).initial_leads ?? null)
+      toast.error(errorMessage(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={approving ? `Approuver ${dispatcher.full_name}` : `Attribuer des leads à ${dispatcher.full_name}`}
+      description={
+        approving
+          ? 'Le dispatcher pourra se connecter. Vous pouvez lui attribuer des leads immédiatement.'
+          : 'Les leads sont choisis automatiquement parmi ceux qui n’ont jamais été traités.'
+      }
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            variant={approving ? 'success' : 'primary'}
+            icon={approving ? Check : Inbox}
+            loading={saving}
+            disabled={!approving && !(Number(allocation.initial_leads) > 0)}
+            onClick={submit}
+          >
+            {approving ? 'Approuver' : 'Attribuer'}
+          </Button>
+        </>
+      }
+    >
+      <LeadAllocationFields value={allocation} onChange={setAllocation} error={error} required={!approving} />
     </Modal>
   )
 }
@@ -113,6 +180,7 @@ export default function DispatchersPage() {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(undefined) // undefined = closed, null = create
   const [deactivating, setDeactivating] = useState(null)
+  const [allocating, setAllocating] = useState(null) // { dispatcher, mode: 'approve' | 'allocate' }
   const [busy, setBusy] = useState(null)
 
   const refresh = () =>
@@ -195,13 +263,18 @@ export default function DispatchersPage() {
                       <div className="flex justify-end gap-1.5">
                         {u.status === 'PENDING' && (
                           <>
-                            <Button size="sm" variant="success" icon={Check} loading={busy === `${u.id}-approve`} onClick={() => run(u, 'approve', null, 'Compte approuvé')}>
+                            <Button size="sm" variant="success" icon={Check} onClick={() => setAllocating({ dispatcher: u, mode: 'approve' })}>
                               Approuver
                             </Button>
                             <Button size="sm" variant="secondary" icon={X} loading={busy === `${u.id}-reject`} onClick={() => run(u, 'reject', null, 'Inscription refusée')}>
                               Refuser
                             </Button>
                           </>
+                        )}
+                        {u.status === 'APPROVED' && (
+                          <Button size="sm" variant="soft" icon={Inbox} onClick={() => setAllocating({ dispatcher: u, mode: 'allocate' })}>
+                            Attribuer des leads
+                          </Button>
                         )}
                         {u.status === 'APPROVED' && (
                           <Button size="sm" variant="ghost" icon={Power} className="text-rose-600" onClick={() => setDeactivating(u)}>
@@ -230,7 +303,18 @@ export default function DispatchersPage() {
           onClose={() => setEditing(undefined)}
           onSaved={async () => {
             setEditing(undefined)
-            await refresh()
+            await Promise.all([refresh(), queryClient.invalidateQueries({ queryKey: ['leads'] })])
+          }}
+        />
+      )}
+      {allocating && (
+        <AllocateDialog
+          dispatcher={allocating.dispatcher}
+          mode={allocating.mode}
+          onClose={() => setAllocating(null)}
+          onDone={async () => {
+            setAllocating(null)
+            await Promise.all([refresh(), queryClient.invalidateQueries({ queryKey: ['leads'] })])
           }}
         />
       )}
