@@ -85,7 +85,7 @@ export default function RegisterPage() {
           label="Mot de passe"
           type="password"
           required
-          hint="8 caractères minimum, avec majuscule, minuscule et chiffre."
+          hint="8 caractères minimum."
           value={form.password}
           onChange={update('password')}
           error={errors.password}
