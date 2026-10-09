@@ -59,6 +59,7 @@ export const ANSWER_FIELDS = [
   'priority_stars',
   'summary_note',
   'next_action',
+  'next_actions',
   'callback_at',
 ]
 
@@ -71,7 +72,7 @@ export const isForOtherPerson = (a) => a.beneficiary !== 'SELF'
 export const isSharedApplicable = (a) => !isB2b(a) && (a.passengers_count ?? 1) <= 1
 
 /** Next actions that end the conversation early (partial qualification allowed). */
-export const isEarlyExit = (a) => ['NOT_INTERESTED', 'NRP'].includes(a.next_action)
+export const isEarlyExit = (a) => (a.next_actions ?? (a.next_action ? [a.next_action] : [])).some((x) => ['NOT_INTERESTED', 'NRP'].includes(x))
 
 const SUMMARY_MIN_LENGTH = 20
 
@@ -208,27 +209,25 @@ export const STEPS = [
       }),
   },
   {
-    key: 'qualification',
-    primaryField: null,
-    fields: ['wants_quotation', 'wants_callback', 'priority_stars', 'main_priority'],
-    validate: (a) => check({ priority_stars: required(a.priority_stars) && 'Attribuez une priorité (1 à 5 étoiles).' }),
-  },
-  {
+    // Closing + agent evaluation (merged). Several next actions can be chosen.
     key: 'closing',
-    primaryField: 'next_action',
-    fields: ['summary_note', 'next_action', 'callback_at'],
-    validate: (a) =>
-      check({
-        summary_note:
-          (a.summary_note ?? '').trim().length < SUMMARY_MIN_LENGTH &&
-          `Rédigez un résumé interne (${SUMMARY_MIN_LENGTH} caractères minimum).`,
-        next_action: required(a.next_action) && 'Choisissez la prochaine action.',
+    primaryField: null,
+    fields: ['next_actions', 'next_action', 'callback_at', 'summary_note', 'priority_stars', 'main_priority', 'wants_quotation', 'wants_callback'],
+    validate: (a) => {
+      const actions = a.next_actions ?? []
+      return check({
+        next_actions: actions.length === 0 && 'Choisissez au moins une prochaine action.',
         callback_at:
-          a.next_action === 'CALLBACK' &&
+          actions.includes('CALLBACK') &&
           (required(a.callback_at)
             ? 'Indiquez la date du rappel.'
             : new Date(a.callback_at) <= new Date() && 'La date de rappel doit être dans le futur.'),
-      }),
+        priority_stars: !isEarlyExit(a) && required(a.priority_stars) && 'Attribuez une priorité (1 à 5 étoiles).',
+        summary_note:
+          (a.summary_note ?? '').trim().length < SUMMARY_MIN_LENGTH &&
+          `Rédigez un résumé interne (${SUMMARY_MIN_LENGTH} caractères minimum).`,
+      })
+    },
   },
   {
     key: 'summary',

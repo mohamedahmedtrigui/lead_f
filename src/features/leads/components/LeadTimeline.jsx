@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CallOutcomeBadge } from '@/components/badges'
-import { AUDIT_EVENT, CALL_OUTCOME, LEAD_STATUS, NEXT_ACTION } from '@/constants/domain'
+import { AUDIT_EVENT, CALL_OUTCOME, formatNextActions, LEAD_STATUS, NEXT_ACTION } from '@/constants/domain'
 import { NotesPanel } from '@/features/calls/components/NotesPanel'
 import { cn } from '@/lib/cn'
 import { formatDateTime, formatDuration } from '@/lib/format'
@@ -29,7 +29,7 @@ function describeEvent(event) {
     case 'CALLBACK_SCHEDULED':
       return formatDateTime(p.callback_at)
     case 'QUALIFICATION_COMPLETED':
-      return `Score ${p.score} · ${p.level} · ${NEXT_ACTION[p.next_action] ?? p.next_action}`
+      return `Score ${p.score} · ${p.level} · ${formatNextActions(p)}`
     case 'NOTE_ADDED':
       return p.excerpt
     case 'CALL_ENDED':

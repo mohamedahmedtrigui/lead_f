@@ -1,5 +1,5 @@
 import { formatDateTime } from '@/lib/format'
-import { NEXT_ACTION } from '@/constants/domain'
+import { formatNextActions } from '@/constants/domain'
 import { isB2b, isSharedApplicable } from '../config/steps'
 
 const yesNo = (value) => (value === true ? 'Oui' : value === false ? 'Non' : null)
@@ -115,16 +115,15 @@ export function buildSummarySections(lead, answers, server, label) {
     },
     {
       title: 'Qualification',
-      step: 'qualification',
+      step: 'closing',
       rows: [
         ['Récap validé par le client', yesNo(answers.recap_confirmed)],
         ['Score d’intérêt', server?.interest_score != null ? `${server.interest_score} / 100` : null],
         ['Niveau', server?.interest_level],
         ['Priorité', answers.priority_stars ? `${answers.priority_stars} / 5` : null],
-        ['Demande de devis', yesNo(answers.wants_quotation)],
         ['Note', answers.summary_note],
-        ['Prochaine action', NEXT_ACTION[answers.next_action] ?? null],
-        ...(answers.next_action === 'CALLBACK' ? [['Rappel', formatDateTime(answers.callback_at)]] : []),
+        ['Prochaine(s) action(s)', formatNextActions(answers) || null],
+        ...((answers.next_actions ?? []).includes('CALLBACK') ? [['Rappel', formatDateTime(answers.callback_at)]] : []),
       ],
     },
   ]
@@ -190,7 +189,7 @@ export function buildSummaryDraft(answers, label) {
   }
 
   if (answers.main_priority) parts.push(`Priorité : ${lower(label('main_priority', answers.main_priority))}.`)
-  if (answers.wants_quotation) parts.push('Souhaite recevoir un devis.')
+  if ((answers.next_actions ?? []).includes('SEND_QUOTATION')) parts.push('Souhaite recevoir un devis.')
 
   return parts.join(' ')
 }

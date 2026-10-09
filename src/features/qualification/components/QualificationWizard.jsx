@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, CheckCircle2, CloudCheck, CloudOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button, Card, Modal } from '@/components/ui'
-import { LEAD_STATUS, NEXT_ACTION } from '@/constants/domain'
+import { formatNextActions, LEAD_STATUS, primaryNextAction } from '@/constants/domain'
 import { useAuth } from '@/features/auth/context/AuthContext'
 import { useScript } from '@/features/script/hooks/useScript'
 import { errorMessage } from '@/lib/http'
@@ -12,7 +12,7 @@ import { buildScriptContext, fillText, renderTemplate } from '../utils/placehold
 import { BeneficiaryStep, IntroductionStep, NeedStep } from '../steps/DiscoverySteps'
 import { PassengersStep, RouteStep } from '../steps/TripSteps'
 import { B2bStep, ExperienceStep, SharedStep } from '../steps/ProfileSteps'
-import { ClosingStep, QualificationStep, RecapStep, SummaryStep } from '../steps/ClosingSteps'
+import { ClosingStep, RecapStep, SummaryStep } from '../steps/ClosingSteps'
 
 const STEP_COMPONENTS = {
   introduction: IntroductionStep,
@@ -24,7 +24,6 @@ const STEP_COMPONENTS = {
   experience: ExperienceStep,
   b2b: B2bStep,
   recap: RecapStep,
-  qualification: QualificationStep,
   closing: ClosingStep,
   summary: SummaryStep,
 }
@@ -141,7 +140,7 @@ export function QualificationWizard({ lead, wizard, actions, onCompleted }) {
     }
   }
 
-  const resultingStatus = NEXT_STATUS[answers.next_action] ?? 'QUALIFIED'
+  const resultingStatus = NEXT_STATUS[primaryNextAction(answers.next_actions ?? [])] ?? 'QUALIFIED'
 
   return (
     <Card className="flex h-full flex-col">
@@ -247,8 +246,8 @@ export function QualificationWizard({ lead, wizard, actions, onCompleted }) {
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-slate-500">Prochaine action</dt>
-            <dd className="font-medium">{NEXT_ACTION[answers.next_action] ?? '—'}</dd>
+            <dt className="text-slate-500">Prochaine(s) action(s)</dt>
+            <dd className="text-right font-medium">{formatNextActions(answers) || '—'}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-slate-500">Nouveau statut du lead</dt>

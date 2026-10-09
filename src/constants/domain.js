@@ -33,6 +33,22 @@ export const NEXT_ACTION = {
   NRP: 'NRP',
 }
 
+/** "Pas intéressé" and "NRP" cannot be combined with another action. */
+export const EXCLUSIVE_NEXT_ACTIONS = ['NOT_INTERESTED', 'NRP']
+
+/** The main action (drives the lead status), same order as the API. */
+export function primaryNextAction(actions = []) {
+  return ['NRP', 'NOT_INTERESTED', 'CALLBACK', 'SEND_QUOTATION', 'TRANSFER_TO_SALES', 'FOLLOW_UP', 'QUALIFIED'].find((a) => actions.includes(a)) ?? null
+}
+
+/** Chosen actions of a qualification (older ones only have next_action). */
+export const nextActionsOf = (q) => (q?.next_actions?.length ? q.next_actions : q?.next_action ? [q.next_action] : [])
+
+export const formatNextActions = (q) =>
+  nextActionsOf(q)
+    .map((a) => NEXT_ACTION[a] ?? a)
+    .join(', ')
+
 export const CALL_OUTCOME = {
   CONNECTED: { label: 'Joint', tone: 'green' },
   NO_ANSWER: { label: 'Pas de réponse', tone: 'amber' },

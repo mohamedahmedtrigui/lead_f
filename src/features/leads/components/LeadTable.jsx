@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowDown, ArrowUp, ChevronRight, PhoneCall } from 'lucide-react'
 import { InterestBadge, LeadStatusBadge } from '@/components/badges'
 import { Button, Stars } from '@/components/ui'
-import { NEXT_ACTION } from '@/constants/domain'
+import { formatNextActions } from '@/constants/domain'
 import { useScript } from '@/features/script/hooks/useScript'
 import { cn } from '@/lib/cn'
 import { formatDateTime, formatPhone, formatRelative } from '@/lib/format'
@@ -124,7 +124,7 @@ export function LeadTable({ leads, mode = 'dispatcher', selected, onToggle, onTo
                       Rappel {formatDateTime(lead.callback_at)}
                     </span>
                   ) : (
-                    (NEXT_ACTION[q?.next_action] ?? '—')
+                    (formatNextActions(q) || '—')
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">

@@ -9,7 +9,10 @@ const SERVER_FIELDS = ['status', 'interest_score', 'interest_level', 'score_brea
 
 function initialAnswers(qualification) {
   if (!qualification) return {}
-  return Object.fromEntries(ANSWER_FIELDS.filter((field) => qualification[field] != null).map((field) => [field, qualification[field]]))
+  const answers = Object.fromEntries(ANSWER_FIELDS.filter((field) => qualification[field] != null).map((field) => [field, qualification[field]]))
+  // Older qualifications only have a single next_action.
+  if (!answers.next_actions?.length && answers.next_action) answers.next_actions = [answers.next_action]
+  return answers
 }
 
 function serverState(qualification) {

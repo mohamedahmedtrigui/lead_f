@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { InterestBadge } from '@/components/badges'
 import { useConfirm } from '@/components/feedback/ConfirmProvider'
 import { Alert, Button, Card, ErrorState, PageLoader } from '@/components/ui'
-import { LEAD_STATUS, NEXT_ACTION } from '@/constants/domain'
+import { formatNextActions, LEAD_STATUS } from '@/constants/domain'
 import { useAuth } from '@/features/auth/context/AuthContext'
 import { leadsApi } from '@/features/leads/api/leadsApi'
 import { LeadReportButton } from '@/features/leads/components/LeadReportButton'
@@ -143,7 +143,7 @@ export default function CallWorkspacePage() {
                 </span>
                 <h2 className="mt-4 text-xl font-bold text-slate-900">Qualification enregistrée</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {lead.name} · {NEXT_ACTION[completed.qualification.next_action]}
+                  {lead.name} · {formatNextActions(completed.qualification)}
                 </p>
                 <div className="mt-4 flex justify-center">
                   <InterestBadge level={completed.qualification.interest_level} score={completed.qualification.interest_score} />

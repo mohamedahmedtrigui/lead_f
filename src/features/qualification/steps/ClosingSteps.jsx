@@ -1,8 +1,10 @@
 import { Wand2 } from 'lucide-react'
-import { Alert, Button, Checkbox, Field, Input, Stars, Textarea } from '@/components/ui'
+import { Alert, Button, Field, Input, Stars, Textarea } from '@/components/ui'
+import { EXCLUSIVE_NEXT_ACTIONS, primaryNextAction } from '@/constants/domain'
 import { isoToLocalInput, localInputToIso } from '@/lib/format'
 import { OptionCards, YesNo } from '../components/OptionCards'
 import { ScoreGauge } from '../components/ScoreGauge'
+import { isEarlyExit } from '../config/steps'
 import { SummaryView } from '../components/SummaryView'
 import { buildSummaryDraft } from '../utils/summary'
 
@@ -20,56 +22,38 @@ export function RecapStep({ answers, setField, errors, optionsFor, reply }) {
   )
 }
 
-/** 11. Agent evaluation: computed score + dispatcher priority (internal). */
-export function QualificationStep({ answers, setField, errors, prompt, optionsFor, server }) {
-  return (
-    <div className="space-y-5">
-      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-        <ScoreGauge score={server.interest_score ?? 0} level={server.interest_level ?? 'LOW'} breakdown={server.score_breakdown ?? []} />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Checkbox
-          label={prompt('wants_quotation', 'Le client demande un devis')}
-          checked={!!answers.wants_quotation}
-          onChange={(e) => setField('wants_quotation', e.target.checked)}
-        />
-        <Checkbox
-          label={prompt('wants_callback', 'Le client souhaite être rappelé')}
-          checked={!!answers.wants_callback}
-          onChange={(e) => setField('wants_callback', e.target.checked)}
-        />
-      </div>
-      <Field label={prompt('priority_stars', 'Priorité commerciale')} required error={errors.priority_stars} hint="Votre ressenti sur l’opportunité (1 = faible, 5 = très forte).">
-        <Stars size="lg" value={answers.priority_stars} onChange={(v) => setField('priority_stars', v)} />
-      </Field>
-      <Field label={prompt('main_priority', 'Priorité exprimée par le client (si mentionnée)')}>
-        <OptionCards
-          columns={3}
-          options={optionsFor('main_priority')}
-          value={answers.main_priority}
-          onChange={(v) => setField('main_priority', v === answers.main_priority ? null : v)}
-        />
-      </Field>
-    </div>
-  )
+/** Selecting "Pas intéressé" / "NRP" clears the others, and vice versa. */
+function toggleAction(current, action) {
+  if (current.includes(action)) return current.filter((a) => a !== action)
+  if (EXCLUSIVE_NEXT_ACTIONS.includes(action)) return [action]
+  return [...current.filter((a) => !EXCLUSIVE_NEXT_ACTIONS.includes(a)), action]
 }
 
-/** 12. Closing: next action (with its closing speech) + internal summary. */
-export function ClosingStep({ answers, setField, errors, optionsFor, prompt, label, reply }) {
+/** 11. Closing + agent evaluation: next actions (several), score, priority, summary. */
+export function ClosingStep({ answers, setField, errors, optionsFor, prompt, label, reply, server }) {
+  const actions = answers.next_actions ?? []
+  const earlyExit = isEarlyExit(answers)
+
+  const onActionsChange = (selected) => {
+    const added = selected.find((a) => !actions.includes(a))
+    const next = added ? toggleAction(actions, added) : selected
+    setField('next_actions', next)
+    // The main action drives the lead status and the closing speech shown.
+    setField('next_action', primaryNextAction(next))
+  }
+
   return (
     <div className="space-y-5">
-      <Field label={prompt('next_action', 'Prochaine action')} required error={errors.next_action}>
-        <OptionCards
-          shortcuts
-          columns={2}
-          options={optionsFor('next_action')}
-          value={answers.next_action}
-          onChange={(v) => setField('next_action', v)}
-          reply={reply('next_action')}
-        />
+      <Field
+        label={prompt('next_action', 'Prochaine(s) action(s) — plusieurs choix possibles')}
+        required
+        error={errors.next_actions}
+        hint="« Pas intéressé » et « NRP » ne se combinent pas avec d’autres actions."
+      >
+        <OptionCards multiple columns={2} options={optionsFor('next_action')} value={actions} onChange={onActionsChange} reply={reply('next_action')} />
       </Field>
 
-      {answers.next_action === 'CALLBACK' && (
+      {actions.includes('CALLBACK') && (
         <Input
           type="datetime-local"
           required
@@ -80,8 +64,28 @@ export function ClosingStep({ answers, setField, errors, optionsFor, prompt, lab
         />
       )}
 
-      {answers.next_action === 'NRP' && (
+      {actions.includes('NRP') && (
         <Alert tone="warning">La communication a été coupée : une tentative NRP sera comptabilisée pour ce lead.</Alert>
+      )}
+
+      {!earlyExit && (
+        <div className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 lg:grid-cols-2">
+          <ScoreGauge score={server.interest_score ?? 0} level={server.interest_level ?? 'LOW'} breakdown={server.score_breakdown ?? []} />
+          <div className="space-y-4">
+            <Field label={prompt('priority_stars', 'Priorité commerciale')} required error={errors.priority_stars} hint="1 = faible, 5 = très forte.">
+              <Stars size="lg" value={answers.priority_stars} onChange={(v) => setField('priority_stars', v)} />
+            </Field>
+            <Field label={prompt('main_priority', 'Priorité exprimée par le client (si mentionnée)')}>
+              <OptionCards
+                compact
+                columns={2}
+                options={optionsFor('main_priority')}
+                value={answers.main_priority}
+                onChange={(v) => setField('main_priority', v === answers.main_priority ? null : v)}
+              />
+            </Field>
+          </div>
+        </div>
       )}
 
       <div>
@@ -106,7 +110,7 @@ export function ClosingStep({ answers, setField, errors, optionsFor, prompt, lab
   )
 }
 
-/** 13. Final internal summary, reviewed before completing the qualification. */
+/** 12. Final internal summary, reviewed before completing the qualification. */
 export function SummaryStep({ lead, answers, server, goTo }) {
   return <SummaryView lead={lead} answers={answers} server={server} onEdit={goTo} />
 }
