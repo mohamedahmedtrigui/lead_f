@@ -63,7 +63,7 @@ export function buildSummarySections(lead, answers, server, label) {
       step: 'schedule',
       rows: [
         ['Fréquence', label('frequency', answers.frequency)],
-        ['Trajets / jour', b2b ? null : answers.trips_per_day],
+        ['Trajets / jour', answers.trips_per_day],
         ['Trajets / semaine', answers.trips_per_week],
         ['Passagers', b2b ? answers.estimated_passengers_per_trip && `${answers.estimated_passengers_per_trip} / trajet` : answers.passengers_count],
       ],
@@ -106,8 +106,7 @@ export function buildSummarySections(lead, answers, server, label) {
         ...(b2b
           ? [
               ['Entreprise', answers.company_name],
-              ['Employés concernés', answers.employees_concerned],
-              ['Trajets / jour', answers.trips_per_day],
+              ['Taille', answers.company_size],
               ['Mêmes horaires', yesNo(answers.b2b_same_schedule)],
               ['Décideur', label('decision_role', answers.decision_role)],
             ]

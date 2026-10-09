@@ -2,8 +2,6 @@ import { Building2 } from 'lucide-react'
 import { Field, Input, Stars, Textarea } from '@/components/ui'
 import { OptionCards, YesNo } from '../components/OptionCards'
 
-const toNumber = (value) => (value === '' ? null : Number(value))
-
 /** 6. Shared transportation (single person, outside B2B). */
 export function SharedStep({ answers, setField, errors, optionsFor, prompt, reply }) {
   const roundTrip = answers.trip_type === 'ROUND_TRIP'
@@ -143,28 +141,12 @@ export function B2bStep({ answers, setField, errors, optionsFor, prompt, reply }
           maxLength={255}
         />
         <Input
-          type="number"
-          min={0}
           label={prompt('company_size', 'Taille de l’entreprise')}
+          placeholder="Ex. : environ 50, 20 à 30…"
           value={answers.company_size ?? ''}
-          onChange={(e) => setField('company_size', toNumber(e.target.value))}
+          onChange={(e) => setField('company_size', e.target.value)}
           error={errors.company_size}
-        />
-        <Input
-          type="number"
-          min={0}
-          label={prompt('employees_concerned', 'Employés concernés')}
-          value={answers.employees_concerned ?? ''}
-          onChange={(e) => setField('employees_concerned', toNumber(e.target.value))}
-          error={errors.employees_concerned}
-        />
-        <Input
-          type="number"
-          min={0}
-          label={prompt('trips_per_day', 'Trajets par jour')}
-          value={answers.trips_per_day ?? ''}
-          onChange={(e) => setField('trips_per_day', toNumber(e.target.value))}
-          error={errors.trips_per_day}
+          maxLength={100}
         />
       </div>
       <Field label={prompt('b2b_same_schedule', 'Les trajets sont-ils aux mêmes horaires ?')}>

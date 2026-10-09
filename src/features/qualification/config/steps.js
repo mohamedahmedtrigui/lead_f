@@ -187,7 +187,7 @@ export const STEPS = [
     key: 'b2b',
     primaryField: 'decision_role',
     visible: isB2b,
-    fields: ['company_name', 'company_size', 'employees_concerned', 'b2b_same_schedule', 'decision_maker_name', 'decision_role'],
+    fields: ['company_name', 'company_size', 'b2b_same_schedule', 'decision_maker_name', 'decision_role'],
     validate: (a) =>
       check({
         company_name: required(a.company_name) && 'Le nom de l’entreprise est requis.',

@@ -90,7 +90,9 @@ function StepEditor({ step, defaults, onSaved }) {
     setSaving(true)
     setErrors({})
     try {
-      await scriptApi.update(step.id, form)
+      // Only send the questions that still exist in the code.
+      const prompts = Object.fromEntries(promptKeys.map((key) => [key, form.prompts[key] ?? '']))
+      await scriptApi.update(step.id, { ...form, prompts })
       toast.success('Script enregistré : les dispatchers voient la nouvelle version')
       await onSaved()
     } catch (error) {
