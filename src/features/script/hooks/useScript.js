@@ -13,7 +13,10 @@ export function useScript() {
   const query = useQuery({
     queryKey: scriptKeys.all,
     queryFn: scriptApi.steps,
-    staleTime: 5 * 60_000,
+    // Admin edits must reach dispatchers quickly: refresh after 1 min and
+    // whenever the tab regains focus (the payload is small).
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
   })
 
   const helpers = useMemo(() => {
