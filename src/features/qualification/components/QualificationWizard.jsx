@@ -11,7 +11,7 @@ import { ScriptBlock } from './ScriptBlock'
 import { buildScriptContext, fillText, renderTemplate } from '../utils/placeholders'
 import { BeneficiaryStep, IntroductionStep, NeedStep } from '../steps/DiscoverySteps'
 import { PassengersStep, RouteStep } from '../steps/TripSteps'
-import { B2bStep, CurrentSolutionStep, ExperienceStep, SharedStep } from '../steps/ProfileSteps'
+import { B2bStep, ExperienceStep, SharedStep } from '../steps/ProfileSteps'
 import { ClosingStep, QualificationStep, RecapStep, SummaryStep } from '../steps/ClosingSteps'
 
 const STEP_COMPONENTS = {
@@ -22,7 +22,6 @@ const STEP_COMPONENTS = {
   passengers: PassengersStep,
   shared: SharedStep,
   experience: ExperienceStep,
-  current_solution: CurrentSolutionStep,
   b2b: B2bStep,
   recap: RecapStep,
   qualification: QualificationStep,

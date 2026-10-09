@@ -56,36 +56,42 @@ export function IntroductionStep({ answers, setField, errors, optionsFor, reply,
 }
 
 /** 2. Who needs the transport. */
-export function BeneficiaryStep({ answers, setField, errors, optionsFor, prompt, reply }) {
+export function BeneficiaryStep({ answers, setField, errors, optionsFor, reply }) {
+  const choose = (value) => {
+    setField('beneficiary', value)
+    // "Pour lui-même" = B2C personal trip: level 3 is skipped.
+    if (value === 'SELF') setField('transport_need', 'PERSONAL')
+    else if (answers.transport_need === 'PERSONAL') setField('transport_need', null)
+  }
+
   return (
     <div className="space-y-4">
       <OptionCards
         shortcuts
-        columns={3}
+        columns={2}
         options={optionsFor('beneficiary')}
         value={answers.beneficiary}
-        onChange={(v) => setField('beneficiary', v)}
+        onChange={choose}
         error={errors.beneficiary}
         reply={reply('beneficiary')}
       />
-      <Input
-        label={prompt('beneficiary_details', 'Précisions')}
-        value={answers.beneficiary_details ?? ''}
-        onChange={(e) => setField('beneficiary_details', e.target.value)}
-        maxLength={255}
-      />
+      {answers.beneficiary === 'SELF' && (
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          Besoin <strong>B2C</strong> : on passe directement au trajet.
+        </p>
+      )}
     </div>
   )
 }
 
-/** 3. Type of trip (personal or B2B). */
+/** 3. For whom exactly (only for "Autre personne"): family, employees (B2B)… */
 export function NeedStep({ answers, setField, errors, optionsFor, prompt, reply }) {
   return (
     <div className="space-y-4">
       <OptionCards
         shortcuts
         columns={2}
-        options={optionsFor('transport_need')}
+        options={optionsFor('transport_need').filter((option) => option.value !== 'PERSONAL')}
         value={answers.transport_need}
         onChange={(v) => setField('transport_need', v)}
         error={errors.transport_need}

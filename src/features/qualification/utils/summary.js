@@ -4,6 +4,22 @@ import { isB2b, isSharedApplicable } from '../config/steps'
 
 const yesNo = (value) => (value === true ? 'Oui' : value === false ? 'Non' : null)
 
+/** "Ali : Sfax → Usine · Lun, Mar · arrivée 07:45" — one line per extra route. */
+export function formatExtraRoutes(routes, label) {
+  return (routes ?? [])
+    .map((r) => {
+      const days = (r.days ?? []).map((d) => label('days_of_week', d)).join(', ')
+      const path = [r.departure, r.destination].filter(Boolean).join(' → ')
+      const parts = [path, days, r.arrival_time && `arrivée ${r.arrival_time}`, r.return_time && `retour ${r.return_time}`].filter(Boolean)
+      const line = `${r.label ? `${r.label} : ` : ''}${parts.join(' · ')}${r.note ? ` (${r.note})` : ''}`
+      return line.trim()
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+const labels = (field, values, label) => (values ?? []).map((v) => label(field, v)).join(', ')
+
 /**
  * Sections of the final qualification summary.
  * `label(field, value)` resolves option labels from the admin script.
@@ -11,7 +27,7 @@ const yesNo = (value) => (value === true ? 'Oui' : value === false ? 'Non' : nul
 export function buildSummarySections(lead, answers, server, label) {
   const days = (answers.days_of_week ?? []).map((day) => label('days_of_week', day)).join(', ')
   const schedule = [
-    answers.departure_time && `Départ ${answers.departure_time}`,
+    answers.arrival_time ? `Arrivée ${answers.arrival_time}` : answers.departure_time && `Départ ${answers.departure_time}`,
     answers.return_time && `Retour ${answers.return_time}`,
     days,
   ]
@@ -39,6 +55,7 @@ export function buildSummarySections(lead, answers, server, label) {
         ['Destination', answers.destination],
         ['Type de trajet', label('trip_type', answers.trip_type)],
         ['Horaires', schedule],
+        ['Autres trajets / horaires', formatExtraRoutes(answers.extra_routes, label)],
       ],
     },
     {
@@ -70,6 +87,13 @@ export function buildSummarySections(lead, answers, server, label) {
             .join(' · '),
         ],
         ['Solution actuelle', label('current_provider', answers.current_provider)],
+        ...(answers.current_provider === 'APPLICATION'
+          ? [
+              ['Applications', labels('other_apps', answers.other_apps, label)],
+              ['Problèmes', labels('other_apps_issues', answers.other_apps_issues, label)],
+              ['Avis', answers.other_apps_feedback],
+            ]
+          : []),
         ['Point de douleur', answers.pain_point],
         ['Priorité client', label('main_priority', answers.main_priority)],
       ],
@@ -123,7 +147,7 @@ export function buildSummaryDraft(answers, label) {
   )
 
   const times = [
-    answers.departure_time && `départ ${answers.departure_time.replace(':', 'h')}`,
+    answers.arrival_time ? `arrivée ${answers.arrival_time.replace(':', 'h')}` : answers.departure_time && `départ ${answers.departure_time.replace(':', 'h')}`,
     answers.trip_type === 'ROUND_TRIP' && answers.return_time && `retour ${answers.return_time.replace(':', 'h')}`,
   ].filter(Boolean)
   if (times.length) parts.push(`${times.join(', ')}.`.replace(/^./, (c) => c.toUpperCase()))
@@ -146,6 +170,17 @@ export function buildSummaryDraft(answers, label) {
   if (answers.shared_transport === 'YES') parts.push('Ouvert au transport partagé.')
   else if (answers.shared_transport === 'MAYBE') parts.push('Pourrait accepter le transport partagé.')
   else if (answers.shared_transport === 'NO') parts.push('Préfère un transport non partagé.')
+
+  const extra = formatExtraRoutes(answers.extra_routes, label)
+  if (extra) parts.push(`Autres trajets : ${extra.replaceAll('\n', ' ; ')}.`)
+
+  if (answers.current_provider === 'APPLICATION' && (answers.other_apps?.length || answers.other_apps_issues?.length)) {
+    parts.push(
+      `Utilise ${labels('other_apps', answers.other_apps, label) || 'une application'}${
+        answers.other_apps_issues?.length ? ` (problèmes : ${lower(labels('other_apps_issues', answers.other_apps_issues, label))})` : ''
+      }.`,
+    )
+  }
 
   if (answers.current_provider && answers.current_provider !== 'NO') {
     parts.push(

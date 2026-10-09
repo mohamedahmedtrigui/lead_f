@@ -21,7 +21,9 @@ export const ANSWER_FIELDS = [
   'destination',
   'trip_type',
   'departure_time',
+  'arrival_time',
   'return_time',
+  'extra_routes',
   'days_of_week',
   'frequency',
   'trips_per_week',
@@ -35,6 +37,10 @@ export const ANSWER_FIELDS = [
   'experience_rating',
   'experience_feedback',
   'improvement_request',
+  'other_apps_used',
+  'other_apps',
+  'other_apps_issues',
+  'other_apps_feedback',
   'current_provider',
   'current_provider_details',
   'customer_preference',
@@ -57,6 +63,9 @@ export const ANSWER_FIELDS = [
 ]
 
 export const isB2b = (a) => ['EMPLOYEES', 'COMPANY'].includes(a.beneficiary) || a.transport_need === 'EMPLOYEE'
+
+/** Level 2 "Pour lui-même" = B2C: level 3 (for whom exactly) is skipped. */
+export const isForOtherPerson = (a) => a.beneficiary !== 'SELF'
 
 /** Shared transport is only proposed to a single person, outside B2B. */
 export const isSharedApplicable = (a) => !isB2b(a) && (a.passengers_count ?? 1) <= 1
@@ -99,8 +108,9 @@ export const STEPS = [
   {
     key: 'need',
     primaryField: 'transport_need',
+    visible: isForOtherPerson,
     fields: ['transport_need', 'transport_need_details'],
-    validate: (a) => check({ transport_need: required(a.transport_need) && 'Sélectionnez le type de déplacement.' }),
+    validate: (a) => check({ transport_need: required(a.transport_need) && 'Précisez pour qui est le transport.' }),
   },
   {
     key: 'route',
@@ -110,7 +120,9 @@ export const STEPS = [
       'destination',
       'trip_type',
       'departure_time',
+      'arrival_time',
       'return_time',
+      'extra_routes',
       'frequency',
       'days_of_week',
       'trips_per_day',
@@ -150,18 +162,26 @@ export const STEPS = [
   {
     key: 'experience',
     primaryField: 'used_miraldrive',
-    fields: ['used_miraldrive', 'experience_rating', 'experience_feedback', 'improvement_request'],
+    // Experience + current solution, merged into one simple step.
+    fields: [
+      'used_miraldrive',
+      'experience_rating',
+      'experience_feedback',
+      'improvement_request',
+      'current_provider',
+      'current_provider_details',
+      'other_apps',
+      'other_apps_issues',
+      'other_apps_feedback',
+      'pain_point',
+      'customer_preference',
+    ],
     validate: (a) =>
       check({
-        used_miraldrive: required(a.used_miraldrive) && 'Notez la réponse du client.',
+        used_miraldrive: required(a.used_miraldrive) && 'Notez si le client connaît MiralDrive.',
         experience_rating: a.used_miraldrive === 'YES' && required(a.experience_rating) && 'Notez l’expérience (1 à 5).',
+        current_provider: required(a.current_provider) && 'Indiquez comment il se déplace aujourd’hui.',
       }),
-  },
-  {
-    key: 'current_solution',
-    primaryField: 'current_provider',
-    fields: ['current_provider', 'current_provider_details', 'customer_preference', 'pain_point'],
-    validate: (a) => check({ current_provider: required(a.current_provider) && 'Sélectionnez la solution actuelle.' }),
   },
   {
     key: 'b2b',

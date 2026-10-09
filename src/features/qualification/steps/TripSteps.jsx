@@ -2,6 +2,7 @@ import { ArrowRight, MapPin, Navigation, Repeat } from 'lucide-react'
 import { Checkbox, Field, Input } from '@/components/ui'
 import { WEEKDAYS } from '@/constants/domain'
 import { isB2b } from '../config/steps'
+import { ExtraRoutesEditor } from '../components/ExtraRoutesEditor'
 import { OptionCards } from '../components/OptionCards'
 
 const toNumber = (value) => (value === '' ? null : Number(value))
@@ -75,10 +76,11 @@ export function RouteStep({ answers, setField, errors, optionsFor, prompt }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <Input
           type="time"
-          label={prompt('departure_time', 'Heure de départ')}
-          value={answers.departure_time ?? ''}
-          onChange={(e) => setField('departure_time', e.target.value || null)}
-          error={errors.departure_time}
+          label={prompt('arrival_time', 'Heure d’arrivée exacte')}
+          hint="Heure à laquelle le client doit être arrivé."
+          value={answers.arrival_time ?? ''}
+          onChange={(e) => setField('arrival_time', e.target.value || null)}
+          error={errors.arrival_time}
         />
         {answers.trip_type === 'ROUND_TRIP' && (
           <Input
@@ -139,6 +141,13 @@ export function RouteStep({ answers, setField, errors, optionsFor, prompt }) {
           />
         </div>
       </div>
+
+      <ExtraRoutesEditor
+        label={prompt('extra_routes', 'Autres trajets ou horaires')}
+        value={answers.extra_routes}
+        onChange={(v) => setField('extra_routes', v)}
+        dayOptions={optionsFor('days_of_week')}
+      />
     </div>
   )
 }

@@ -11,7 +11,7 @@ export const PLACEHOLDERS = [
   ['[DÉPART]', 'lieu de départ'],
   ['[DESTINATION]', 'destination'],
   ['[FRÉQUENCE]', 'fréquence et jours'],
-  ['[HORAIRE]', 'heure de départ (et de retour)'],
+  ['[HORAIRE]', 'heure d’arrivée exacte (et de retour)'],
   ['[NOMBRE]', 'nombre de passagers'],
   ['[TRAJET PARTAGÉ / INDIVIDUEL]', 'type de trajet'],
   ['[JOUR]', 'jour du rappel'],
@@ -36,7 +36,7 @@ export function buildScriptContext({ answers = {}, label = () => null, user, lea
   const days = (answers.days_of_week ?? []).map((d) => label('days_of_week', d)).join(', ')
   const frequency = [label('frequency', answers.frequency)?.toLowerCase(), days && `(${days})`].filter(Boolean).join(' ')
   const schedule = [
-    hour(answers.departure_time),
+    answers.arrival_time ? `arrivée ${hour(answers.arrival_time)}` : hour(answers.departure_time),
     answers.trip_type === 'ROUND_TRIP' && answers.return_time ? `retour ${hour(answers.return_time)}` : null,
   ]
     .filter(Boolean)

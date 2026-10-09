@@ -20,7 +20,8 @@ export function LiveSummaryPanel({ answers, server }) {
   const { label } = useScript()
   const b2b = isB2b(answers)
   const route = answers.departure || answers.destination ? `${answers.departure ?? '?'} → ${answers.destination ?? '?'}` : null
-  const times = [answers.departure_time, answers.trip_type === 'ROUND_TRIP' ? answers.return_time : null].filter(Boolean).join(' / ')
+  const times = [answers.arrival_time ?? answers.departure_time, answers.trip_type === 'ROUND_TRIP' ? answers.return_time : null].filter(Boolean).join(' / ')
+  const extraRoutes = (answers.extra_routes ?? []).length
   const passengers = b2b ? answers.estimated_passengers_per_trip && `${answers.estimated_passengers_per_trip} / trajet` : answers.passengers_count
 
   return (
@@ -59,7 +60,11 @@ export function LiveSummaryPanel({ answers, server }) {
           <Fact label="Passagers" value={passengers} />
           <Fact label="Partage" value={label('shared_transport', answers.shared_transport)} />
           <Fact label="Déjà client" value={label('used_miraldrive', answers.used_miraldrive)} />
+          {extraRoutes > 0 && <Fact label="Autres trajets" value={`+ ${extraRoutes}`} />}
           <Fact label="Solution actuelle" value={label('current_provider', answers.current_provider)} />
+          {answers.current_provider === 'APPLICATION' && (
+            <Fact label="Applications" value={(answers.other_apps ?? []).map((v) => label('other_apps', v)).join(', ')} />
+          )}
           <Fact label="Point de douleur" value={answers.pain_point} />
           {b2b && <Fact label="Entreprise" value={answers.company_name} />}
           {b2b && <Fact label="Décision" value={label('decision_role', answers.decision_role)} />}

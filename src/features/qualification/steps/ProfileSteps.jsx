@@ -39,10 +39,13 @@ export function SharedStep({ answers, setField, errors, optionsFor, prompt, repl
   )
 }
 
-/** 7. Experience with MiralDrive or other services. */
+/** 7. Experience + current solution (one simple step). */
 export function ExperienceStep({ answers, setField, errors, optionsFor, prompt, reply }) {
+  const byApp = answers.current_provider === 'APPLICATION'
+
   return (
     <div className="space-y-5">
+      {/* 1. MiralDrive */}
       <OptionCards
         shortcuts
         columns={3}
@@ -53,44 +56,22 @@ export function ExperienceStep({ answers, setField, errors, optionsFor, prompt, 
         reply={reply('used_miraldrive')}
       />
       {answers.used_miraldrive === 'YES' && (
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-          <Field label={prompt('experience_rating', 'Note de l’expérience')} required error={errors.experience_rating}>
-            <Stars size="lg" label="Expérience" value={answers.experience_rating} onChange={(v) => setField('experience_rating', v)} />
+        <div className="grid items-start gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-[auto_1fr]">
+          <Field label={prompt('experience_rating', 'Note MiralDrive')} required error={errors.experience_rating}>
+            <Stars label="Expérience" value={answers.experience_rating} onChange={(v) => setField('experience_rating', v)} />
           </Field>
-          <Textarea
-            rows={2}
-            label={prompt('experience_feedback', 'Détails')}
+          <Input
+            label={prompt('experience_feedback', 'Son retour')}
             value={answers.experience_feedback ?? ''}
             onChange={(e) => setField('experience_feedback', e.target.value)}
             maxLength={2000}
           />
-          <Textarea
-            rows={2}
-            label={prompt('improvement_request', 'Améliorations souhaitées')}
-            value={answers.improvement_request ?? ''}
-            onChange={(e) => setField('improvement_request', e.target.value)}
-            maxLength={2000}
-          />
         </div>
       )}
-    </div>
-  )
-}
 
-/** 8. Current solution and difficulties. */
-export function CurrentSolutionStep({ answers, setField, errors, optionsFor, prompt, reply }) {
-  return (
-    <div className="space-y-5">
-      <Textarea
-        rows={2}
-        label={prompt('pain_point', 'Difficultés rencontrées')}
-        value={answers.pain_point ?? ''}
-        onChange={(e) => setField('pain_point', e.target.value)}
-        maxLength={2000}
-      />
-      <Field label="Service utilisé actuellement" required error={errors.current_provider}>
+      {/* 2. Today */}
+      <Field label={prompt('current_provider', 'Comment se déplace-t-il aujourd’hui ?')} required error={errors.current_provider}>
         <OptionCards
-          shortcuts
           columns={2}
           options={optionsFor('current_provider')}
           value={answers.current_provider}
@@ -98,26 +79,53 @@ export function CurrentSolutionStep({ answers, setField, errors, optionsFor, pro
           reply={reply('current_provider')}
         />
       </Field>
-      {answers.current_provider && answers.current_provider !== 'NO' && (
-        <Input
-          label={prompt('current_provider_details', 'Précisions')}
-          value={answers.current_provider_details ?? ''}
-          onChange={(e) => setField('current_provider_details', e.target.value)}
-          maxLength={255}
-        />
+
+      {/* 3. Other apps: quick choices and/or free opinion — all optional */}
+      {byApp && (
+        <div className="space-y-4 rounded-xl border border-brand-100 bg-brand-50/40 p-4">
+          <Field label={prompt('other_apps', 'Quelle(s) application(s) ?')}>
+            <OptionCards
+              multiple
+              compact
+              columns={4}
+              options={optionsFor('other_apps')}
+              value={answers.other_apps ?? []}
+              onChange={(v) => setField('other_apps', v.length ? v : null)}
+            />
+          </Field>
+          <Field label={prompt('other_apps_issues', 'Problèmes rencontrés')}>
+            <OptionCards
+              multiple
+              compact
+              columns={2}
+              options={optionsFor('other_apps_issues')}
+              value={answers.other_apps_issues ?? []}
+              onChange={(v) => setField('other_apps_issues', v.length ? v : null)}
+            />
+          </Field>
+          <Textarea
+            rows={2}
+            label={prompt('other_apps_feedback', 'Son avis en quelques mots')}
+            value={answers.other_apps_feedback ?? ''}
+            onChange={(e) => setField('other_apps_feedback', e.target.value)}
+            maxLength={2000}
+          />
+        </div>
       )}
+
+      {/* 4. Difficulties */}
       <Textarea
         rows={2}
-        label={prompt('customer_preference', 'Ce que le client apprécie')}
-        value={answers.customer_preference ?? ''}
-        onChange={(e) => setField('customer_preference', e.target.value)}
+        label={prompt('pain_point', 'Difficultés rencontrées aujourd’hui')}
+        value={answers.pain_point ?? ''}
+        onChange={(e) => setField('pain_point', e.target.value)}
         maxLength={2000}
       />
     </div>
   )
 }
 
-/** 9. B2B qualification (only for employees / company needs). */
+/** 8. B2B qualification (only for employees / company needs). */
 export function B2bStep({ answers, setField, errors, optionsFor, prompt, reply }) {
   return (
     <div className="space-y-5">
